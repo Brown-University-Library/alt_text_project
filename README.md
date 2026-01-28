@@ -1,8 +1,10 @@
 _(under construction)_
 
+ignore everything below --- it's from the pdf-checker -- this will be the image-alt-text project
+
 [![CI tests](https://github.com/birkin/pdf_checker_project/actions/workflows/ci_tests.yaml/badge.svg)](https://github.com/birkin/pdf_checker_project/actions/workflows/ci_tests.yaml)
 
-# PDF Checker Project
+# ~~PDF Checker Project~~  image-alt-text project
 
 ## Purpose
 
