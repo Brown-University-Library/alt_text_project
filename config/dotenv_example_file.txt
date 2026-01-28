@@ -1,0 +1,81 @@
+## ============================================================================
+## standard project-level settings
+## ============================================================================
+
+## for info on settings: <https://docs.djangoproject.com/en/5.2/ref/settings/>
+
+SECRET_KEY="example_secret_key"
+
+DEBUG_JSON="true"
+
+ADMINS_JSON='
+    [
+      [
+        "exampleFirst exampleLast",
+        "example@domain.edu"
+      ]
+    ]'
+
+ALLOWED_HOSTS_JSON='[]'
+CSRF_TRUSTED_ORIGINS_JSON='[]'
+
+DATABASES_JSON='
+    {
+      "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "HOST": "",
+        "NAME": "../DBs/pdf_checker_project.sqlite",
+        "PASSWORD": "",
+        "PORT": "",
+        "USER": ""
+      }
+    }
+    '
+
+STATIC_URL="/static/"
+STATIC_ROOT="/path/to/some/apache-served/html/dir/"  # used by collectstatic; not used by runserver.
+
+SERVER_EMAIL="donotreply_foo-project@domain.edu"
+EMAIL_HOST="localhost"
+EMAIL_PORT="1026"  # will be converted to int in settings.py
+
+LOG_PATH="../logs/pdf_checker_project.log"
+LOG_LEVEL="DEBUG"
+
+
+## https://docs.djangoproject.com/en/5.2/topics/cache/
+## - TIMEOUT is in seconds (0 means don't cache); CULL_FREQUENCY defaults to one-third
+CACHES_JSON='
+{
+  "default": {
+    "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+    "LOCATION": "../cache_dir",
+    "TIMEOUT": 0,
+    "OPTIONS": {
+        "MAX_ENTRIES": 1000
+    }
+  }
+}
+'
+
+## ============================================================================
+## app
+## ============================================================================
+
+## the envars below aren't currently used in this template, but are commonly used in our apps
+
+README_URL="https://github.com/birkin/django_template_52_project/blob/main/README.md"
+
+## for localhost shib-testing
+TEST_META_DCT_JSON='{
+  "shib-eppn-key": "eppn@domain.edu",
+  "shib-joinedname-key": "First_Last",
+  "shib-email-key": "first_last@domain.edu",
+  "shib-firstname-key": "First",
+  "shib-groups-key": "aa:bb:cc;dd:ee:ff;the:group;gg:hh"
+}'
+
+LOGIN_PROBLEM_EMAIL="pdf_checker_project_problems@domain.edu"
+
+
+## end --------------------------------------------------------------
