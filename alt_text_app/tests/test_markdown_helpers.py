@@ -21,4 +21,4 @@ class MarkdownHelpersTest(TestCase):
         Checks load_markdown_from_lib() reads and renders the info.md file.
         """
         html = markdown_helpers.load_markdown_from_lib('info.md')
-        self.assertIn('uploaded an image', html)
+        self.assertIn('the experimental Image Alt-Text Maker', html)
