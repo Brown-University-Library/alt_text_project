@@ -1,5 +1,7 @@
 # Plan: Convert PDF Checker -> Image Alt-Text Maker
 
+Before any code changes, review `alt_text_project/AGENTS.md` for coding-directives to follow.
+
 ## Goal
 Convert this Django webapp from a **PDF accessibility checker** into an **image alt-text maker** with the same high-level architecture:
 
