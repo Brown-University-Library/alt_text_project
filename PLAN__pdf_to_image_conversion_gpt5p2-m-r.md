@@ -14,7 +14,7 @@ Convert this Django webapp from a **PDF accessibility checker** into an **image 
 - No requirement to keep veraPDF functionality.
 - Maintain existing architectural conventions from `AGENTS.md`:
   - `views.py` stays thin (orchestrator only)
-  - business logic goes in `pdf_checker_app/lib/`
+  - business logic goes in `alt_text_app/lib/` 
   - use `httpx` for HTTP calls
   - Python 3.12 type hints
   - follow `ruff.toml` formatting (notably single quotes)
@@ -170,6 +170,8 @@ Replace `pdf_checker_app/lib/prompt.md` with an alt-text prompt template, e.g.:
   - do not guess sensitive attributes
   - mention visible text only if clearly legible
   - optionally produce: 1) short alt text 2) longer description (future)
+
+Keep the prompt in its own file for easy maintenance.
 
 ### Payload format (high level)
 Current implementation uses:
@@ -339,10 +341,13 @@ If you prefer, Stage 2 can be folded into Stage 1, but it will be a larger “bi
 ### Open questions / decisions to make early
 - Should the Django app package be renamed from `pdf_checker_app` to something like `alt_text_app`?
   - Renaming is doable but increases churn; you can keep the package name and just rename user-facing text + models.
+  - USER-ANSWER: yes, rename the app package to `alt_text_app`.
 - How will images be served for preview on the report page?
   - simplest: add a view that streams the stored file by checksum (ensure access control if needed).
+  - USER-ANSWER: sure, streaming the stored file is fine for now
 - Which OpenRouter models will be in `OPENROUTER_MODEL_ORDER`?
   - ensure they support image input.
+  - USER-ANSWER: don't worry about this -- I'll set this in the .env -- it should not affect the code.
 
 ---
 
@@ -354,3 +359,4 @@ The conversion is complete when:
 - Sync attempt uses short timeout; timeout falls back to pending + polling + cron.
 - Model-order fallback remains in effect.
 - Pattern header includes remain functional.
+- Updated tests pass.
