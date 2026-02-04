@@ -16,10 +16,16 @@ Convert this Django webapp from a **PDF accessibility checker** into an **image 
 - No requirement to keep veraPDF functionality.
 - Maintain existing architectural conventions from `AGENTS.md`:
   - `views.py` stays thin (orchestrator only)
-  - business logic goes in `alt_text_app/lib/` 
+  - business logic goes in `alt_text_app/lib/`
   - use `httpx` for HTTP calls
   - Python 3.12 type hints
   - follow `ruff.toml` formatting (notably single quotes)
+
+## Confirmed decisions (from `USER-ANSWER`)
+- Use the **two-stage** implementation approach.
+- Rename the Django app package from `pdf_checker_app` to `alt_text_app`.
+- Serve image preview(s) via a Django endpoint that streams the stored file (for now).
+- Treat `OPENROUTER_MODEL_ORDER` as an environment/config concern; the app should remain model-agnostic.
 
 ---
 
@@ -164,7 +170,7 @@ Keep v1 minimal; consider adding later:
 ## OpenRouter multimodal request plan
 
 ### Prompt template
-Replace `pdf_checker_app/lib/prompt.md` with an alt-text prompt template, e.g.:
+Replace `alt_text_app/lib/prompt.md` with an alt-text prompt template, e.g.:
 - Ask for accessibility-focused alt text
 - Include constraints:
   - concise
@@ -190,7 +196,7 @@ For multimodal, plan to send content that includes both text and image, typicall
 
 Notes:
 - Some models accept `image_url` with a remote URL; others accept `data:` URLs. For v1, `data:` is simplest.
-- Implement image base64 encoding in `pdf_checker_app/lib/` helper(s), not in the view.
+- Implement image base64 encoding in `alt_text_app/lib/` helper(s), not in the view.
 - Keep `call_openrouter_with_model_order()` logic as-is, but ensure each model in `OPENROUTER_MODEL_ORDER` is truly multimodal.
 
 ### Timeouts
@@ -303,6 +309,7 @@ Using Django’s test framework:
 Reason: the shift from “PDF + veraPDF + OpenRouter” to “Image + OpenRouter-only” touches many files; staging reduces the risk of breaking the routing/UI while refactoring.
 
 #### Stage 1: deliver the new user path end-to-end (minimal, working)
+- Rename the Django app package from `pdf_checker_app` to `alt_text_app` (this is a larger change, but you’ve confirmed you want it).
 - Replace upload form to accept/validate images
 - Store image files
 - New models (`ImageDocument`, `OpenRouterAltText`)
@@ -317,8 +324,7 @@ Reason: the shift from “PDF + veraPDF + OpenRouter” to “Image + OpenRouter
 - Update `.env` expectations (e.g. `IMAGE_UPLOAD_PATH`)
 - Update tests accordingly
 
-If you prefer, Stage 2 can be folded into Stage 1, but it will be a larger “big bang” change.
-USER-ANSWER: Use the two-stage approach.
+Decision (USER-ANSWER): Use the two-stage approach.
 
 ---
 
@@ -327,12 +333,12 @@ USER-ANSWER: Use the two-stage approach.
 ### Key files you’ll edit in the conversion
 - `config/urls.py`
 - `config/settings.py` (upload path settings + cleanup)
-- `pdf_checker_app/models.py`
-- `pdf_checker_app/forms.py`
-- `pdf_checker_app/views.py`
-- `pdf_checker_app/lib/openrouter_helpers.py` (multimodal payload)
-- `pdf_checker_app/lib/prompt.md` (new prompt)
-- Templates under `pdf_checker_app/pdf_checker_app_templates/pdf_checker_app/`
+- `alt_text_app/models.py`
+- `alt_text_app/forms.py`
+- `alt_text_app/views.py`
+- `alt_text_app/lib/openrouter_helpers.py` (multimodal payload)
+- `alt_text_app/lib/prompt.md` (new prompt)
+- Templates under `alt_text_app/alt_text_app_templates/alt_text_app/` (or whatever template-dir structure you choose during the rename)
 - `scripts/process_openrouter_summaries.py` (repurpose)
 
 ### Commands you’ll likely run (later, during implementation)
@@ -341,16 +347,10 @@ USER-ANSWER: Use the two-stage approach.
 - `uv run ./manage.py runserver`
 - `uv run ./run_tests.py`
 
-### Open questions / decisions to make early
-- Should the Django app package be renamed from `pdf_checker_app` to something like `alt_text_app`?
-  - Renaming is doable but increases churn; you can keep the package name and just rename user-facing text + models.
-  - USER-ANSWER: yes, rename the app package to `alt_text_app`.
-- How will images be served for preview on the report page?
-  - simplest: add a view that streams the stored file by checksum (ensure access control if needed).
-  - USER-ANSWER: sure, streaming the stored file is fine for now
-- Which OpenRouter models will be in `OPENROUTER_MODEL_ORDER`?
-  - ensure they support image input.
-  - USER-ANSWER: don't worry about this -- I'll set this in the .env -- it should not affect the code.
+### Decisions confirmed early (from `USER-ANSWER`)
+- Rename app package to `alt_text_app`.
+- Stream stored images via a Django endpoint for report-page preview.
+- You will set `OPENROUTER_MODEL_ORDER` in `.env` (code should not depend on a particular model name, only on the list existing).
 
 ---
 
