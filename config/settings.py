@@ -58,7 +58,7 @@ INSTALLED_APPS: list[str] = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'pdf_checker_app',
+    'alt_text_app',
 ]
 
 MIDDLEWARE: list[str] = [
@@ -76,8 +76,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES: list[dict[str, object]] = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # 'DIRS': [ '%s/pdf_checker_app' % BASE_DIR ],
-        'DIRS': [f'{BASE_DIR}/pdf_checker_app/pdf_checker_app_templates'],
+        'DIRS': [f'{BASE_DIR}/alt_text_app/alt_text_app_templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -183,7 +182,7 @@ LOGGING: dict[str, object] = {
             'level': 'ERROR',
             'propagate': False,
         },
-        'pdf_checker_app': {
+        'alt_text_app': {
             'handlers': ['logfile'],
             'level': 'DEBUG',  # messages above this will get sent to the `logfile` handler
             'propagate': False,
@@ -202,10 +201,6 @@ LOGGING: dict[str, object] = {
 ## Pattern header configuration
 PATTERN_HEADER_URL: str = os.environ.get('PATTERN_HEADER_URL', '')
 
-## veraPDF Configuration
-VERAPDF_PATH: str = os.environ['VERAPDF_PATH']
-VERAPDF_PROFILE: str = os.environ['VERAPDF_PROFILE']  # for now using `PDFUA_1_MACHINE`
-
 ## OpenRouter configuration
 OPENROUTER_API_KEY: str = os.environ.get('OPENROUTER_API_KEY', '')
 OPENROUTER_MODEL_ORDER_RAW: str = os.environ.get('OPENROUTER_MODEL_ORDER', '')
@@ -217,14 +212,12 @@ FILE_UPLOAD_MAX_MEMORY_SIZE: int = 52428800  # 50MB
 DATA_UPLOAD_MAX_MEMORY_SIZE: int = 52428800  # 50MB
 
 ## Temp file storage
-PDF_UPLOAD_PATH: str = os.environ['PDF_UPLOAD_PATH']
+IMAGE_UPLOAD_PATH: str = os.environ['IMAGE_UPLOAD_PATH']
 
 ## Synchronous processing timeouts (web requests)
-VERAPDF_SYNC_TIMEOUT_SECONDS: float = 30.0
 OPENROUTER_SYNC_TIMEOUT_SECONDS: float = 30.0
 
 ## Cron job timeouts (background processing - more patient)
-VERAPDF_CRON_TIMEOUT_SECONDS: float = 60.0
 OPENROUTER_CRON_TIMEOUT_SECONDS: float = 60.0
 
 ## Stuck processing recovery threshold (10 minutes)

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-Cron-driven script to generate OpenRouter summaries for completed veraPDF results.
+Cron-driven script to generate OpenRouter alt text for pending images.
 
-Finds PDFDocument rows with completed veraPDF processing but no summary,
+Finds ImageDocument rows with pending/failed alt-text generation,
 calls OpenRouter API, and persists the results.
 
 Usage:
@@ -37,8 +37,8 @@ from django.conf import settings as project_settings  # noqa: E402
 from django.db.models import Q  # noqa: E402
 from django.utils import timezone as django_timezone  # noqa: E402
 
-from pdf_checker_app.lib import openrouter_helpers  # noqa: E402
-from pdf_checker_app.models import OpenRouterSummary, PDFDocument, VeraPDFResult  # noqa: E402
+from alt_text_app.lib import image_helpers, openrouter_helpers  # noqa: E402
+from alt_text_app.models import ImageDocument, OpenRouterAltText  # noqa: E402
 
 
 def get_api_key() -> str:
@@ -48,40 +48,30 @@ def get_api_key() -> str:
     return openrouter_helpers.get_api_key()
 
 
-def find_pending_summaries(batch_size: int) -> list[PDFDocument]:
+def find_pending_alt_text(batch_size: int) -> list[ImageDocument]:
     """
-    Finds PDFDocument rows that need summary generation.
+    Finds ImageDocument rows that need alt-text generation.
     Criteria:
-    - processing_status == 'completed'
-    - has a VeraPDFResult
-    - does NOT have an OpenRouterSummary OR has one with status 'pending'
+    - processing_status in ('pending', 'processing')
+    - does NOT have an OpenRouterAltText OR has one with status 'pending'/'failed'
     """
-    ## Find docs with completed veraPDF but no summary
-    docs_without_summary = (
-        PDFDocument.objects.filter(processing_status='completed')
-        .exclude(openrouter_summary__isnull=False)
-        .filter(verapdf_result__isnull=False)
-        .exclude(verapdf_result__is_accessible=True)
+    docs_without_alt_text = (
+        ImageDocument.objects.filter(processing_status__in=['pending', 'processing'])
+        .exclude(openrouter_alt_text__isnull=False)
         .order_by('uploaded_at')[:batch_size]
     )
 
-    ## Find docs with pending or failed summary
-    docs_with_pending_summary = (
-        PDFDocument.objects.filter(
-            processing_status='completed',
-        )
-        .filter(Q(openrouter_summary__status='pending') | Q(openrouter_summary__status='failed'))
-        .filter(verapdf_result__isnull=False)
-        .exclude(verapdf_result__is_accessible=True)
+    docs_with_pending_alt_text = (
+        ImageDocument.objects.filter(processing_status__in=['pending', 'processing'])
+        .filter(Q(openrouter_alt_text__status='pending') | Q(openrouter_alt_text__status='failed'))
         .order_by('uploaded_at')[:batch_size]
     )
 
-    ## Combine and deduplicate
-    doc_ids = set()
-    result: list[PDFDocument] = []
-    for doc in list(docs_without_summary) + list(docs_with_pending_summary):
-        if doc.pk not in doc_ids and len(result) < batch_size:
-            doc_ids.add(doc.pk)
+    doc_ids: set[str] = set()
+    result: list[ImageDocument] = []
+    for doc in list(docs_without_alt_text) + list(docs_with_pending_alt_text):
+        if str(doc.pk) not in doc_ids and len(result) < batch_size:
+            doc_ids.add(str(doc.pk))
             result.append(doc)
 
     return result
@@ -94,79 +84,79 @@ def get_model_order() -> list[str]:
     return openrouter_helpers.get_model_order()
 
 
-def process_single_summary(doc: PDFDocument, api_key: str, model_order: list[str]) -> bool:
+def process_single_alt_text(doc: ImageDocument, api_key: str, model_order: list[str]) -> bool:
     """
-    Generates and saves an OpenRouter summary for a single document.
+    Generates and saves OpenRouter alt text for a single image.
     Returns True on success, False on failure.
-    Called by process_summaries()
+    Called by process_alt_texts()
     """
-    log.info(f'Processing summary for document {doc.pk} ({doc.original_filename})')
+    log.info('Processing alt text for document %s (%s)', doc.pk, doc.original_filename)
 
-    ## Get or create the summary record
-    summary: OpenRouterSummary
+    alt_text_record: OpenRouterAltText
     created: bool
     utc_now = datetime.now(tz=timezone.utc)
     naive_now = django_timezone.make_naive(utc_now)
-    summary, created = OpenRouterSummary.objects.get_or_create(
-        pdf_document=doc,
+    alt_text_record, created = OpenRouterAltText.objects.get_or_create(
+        image_document=doc,
         defaults={'status': 'processing', 'requested_at': naive_now},
     )
 
     if not created:
         utc_now = datetime.now(tz=timezone.utc)
         naive_now = django_timezone.make_naive(utc_now)
-        summary.status = 'processing'
-        summary.requested_at = naive_now
-        summary.error = None
-        summary.save(update_fields=['status', 'requested_at', 'error'])
+        alt_text_record.status = 'processing'
+        alt_text_record.requested_at = naive_now
+        alt_text_record.error = None
+        alt_text_record.save(update_fields=['status', 'requested_at', 'error'])
 
     success = False
     try:
-        ## Get veraPDF result
-        verapdf_result = VeraPDFResult.objects.get(pdf_document=doc)
-        raw_verapdf_json = verapdf_result.raw_json
+        image_path = image_helpers.get_image_path(doc.file_checksum, doc.file_extension)
+        if not image_path.exists():
+            raise FileNotFoundError(f'Image file not found: {image_path}')
 
-        ## Prune checks
-        verapdf_json = openrouter_helpers.filter_down_failure_checks(raw_verapdf_json)
+        prompt = openrouter_helpers.build_prompt()
+        log.debug('Calling OpenRouter for document %s', doc.pk)
 
-        ## Build prompt
-        prompt = openrouter_helpers.build_prompt(verapdf_json)
-        log.debug(f'Calling OpenRouter for document {doc.pk}')
+        alt_text_record.prompt = prompt
+        alt_text_record.save(update_fields=['prompt'])
 
-        ## Save prompt
-        summary.prompt = prompt
-        summary.save(update_fields=['prompt'])
+        image_data_url = image_helpers.build_image_data_url(image_path, doc.mime_type)
 
-        ## Call API with cron timeout
         timeout_seconds = project_settings.OPENROUTER_CRON_TIMEOUT_SECONDS
         response_json = openrouter_helpers.call_openrouter_with_model_order(
             prompt,
             api_key,
             model_order,
             timeout_seconds,
+            image_data_url,
         )
 
-        ## Parse response
         parsed = openrouter_helpers.parse_openrouter_response(response_json)
+        openrouter_helpers.persist_openrouter_alt_text(alt_text_record, response_json, parsed)
 
-        ## Persist summary
-        openrouter_helpers.persist_openrouter_summary(summary, response_json, parsed)
+        doc.processing_status = 'completed'
+        doc.processing_error = None
+        doc.save(update_fields=['processing_status', 'processing_error'])
 
-        log.info(f'Successfully generated summary for document {doc.pk}')
+        log.info('Successfully generated alt text for document %s', doc.pk)
         success = True
 
     except Exception as exc:
-        log.exception(f'Failed to generate summary for document {doc.pk}')
-        summary.status = 'failed'
-        summary.error = str(exc)
-        summary.save(update_fields=['status', 'error'])
+        log.exception('Failed to generate alt text for document %s', doc.pk)
+        alt_text_record.status = 'failed'
+        alt_text_record.error = str(exc)
+        alt_text_record.save(update_fields=['status', 'error'])
+        doc.processing_status = 'failed'
+        doc.processing_error = str(exc)
+        doc.save(update_fields=['processing_status', 'processing_error'])
 
     return success
 
 
-def process_summaries(batch_size: int, dry_run: bool) -> tuple[int, int]:
+def process_alt_texts(batch_size: int, dry_run: bool) -> tuple[int, int]:
     """
-    Finds and processes pending OpenRouter summaries.
+    Finds and processes pending OpenRouter alt-text jobs.
     Returns (success_count, failure_count).
     """
     api_key = get_api_key()
@@ -179,19 +169,19 @@ def process_summaries(batch_size: int, dry_run: bool) -> tuple[int, int]:
         log.error('OPENROUTER_MODEL_ORDER environment variable not set')
         return (0, 0)
 
-    docs = find_pending_summaries(batch_size)
-    log.info(f'Found {len(docs)} documents needing summaries')
+    docs = find_pending_alt_text(batch_size)
+    log.info('Found %s documents needing alt text', len(docs))
 
     if dry_run:
         for doc in docs:
-            log.info(f'[DRY RUN] Would generate summary for: {doc.pk} ({doc.original_filename})')
+            log.info('[DRY RUN] Would generate alt text for: %s (%s)', doc.pk, doc.original_filename)
         return (0, 0)
 
     success_count = 0
     failure_count = 0
 
     for doc in docs:
-        if process_single_summary(doc, api_key, model_order):
+        if process_single_alt_text(doc, api_key, model_order):
             success_count += 1
         else:
             failure_count += 1
@@ -203,7 +193,7 @@ def main() -> None:
     """
     Entry point for the cron script.
     """
-    parser = argparse.ArgumentParser(description='Generate OpenRouter summaries for completed PDFs')
+    parser = argparse.ArgumentParser(description='Generate OpenRouter alt text for pending images')
     parser.add_argument(
         '--batch-size',
         type=int,
@@ -231,8 +221,8 @@ def main() -> None:
         datefmt='%d/%b/%Y %H:%M:%S',
     )
 
-    log.info('Starting OpenRouter summary processor')
-    success_count, failure_count = process_summaries(args.batch_size, args.dry_run)
+    log.info('Starting OpenRouter alt-text processor')
+    success_count, failure_count = process_alt_texts(args.batch_size, args.dry_run)
     log.info(f'Finished: {success_count} succeeded, {failure_count} failed')
 
 

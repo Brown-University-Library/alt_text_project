@@ -317,12 +317,33 @@ Reason: the shift from “PDF + veraPDF + OpenRouter” to “Image + OpenRouter
 - Report page + htmx polling shows alt text when ready
 - Keep pattern header includes unchanged
 
+**Stage 1 status (completed in code):**
+- App renamed to `alt_text_app`, template/static dirs updated; settings/urls updated for image routes.
+- `ImageDocument` + `OpenRouterAltText` models implemented; admin updated.
+- Image upload validation + storage; checksum + image preview endpoint.
+- OpenRouter multimodal payload + prompt updated for alt-text generation; sync attempt + cron fallback updated.
+- Templates updated for image upload/report + new alt-text fragment + polling.
+- Tests updated for image flow; info/prompt docs updated; veraPDF cron deprecated.
+
 #### Stage 2: cleanup & consolidation
 - Remove/retire veraPDF scripts and helpers
 - Remove verapdf fragments/templates
 - Rename remaining PDF-oriented identifiers (URL names, template text, `X-Title` header value in OpenRouter request)
 - Update `.env` expectations (e.g. `IMAGE_UPLOAD_PATH`)
 - Update tests accordingly
+
+**Stage 2 status:**
+- Partially completed: veraPDF cron script is now a no-op placeholder; some legacy veraPDF/summary fragments kept but labeled “legacy.”
+
+**Additional next steps (if resuming in a new work session):**
+1. Decide whether to delete legacy veraPDF/summary fragments entirely (or keep as placeholders).
+2. Update remaining docs/metadata references (README badge/link, PROMPTS.md historical references if desired).
+3. Run migrations/tests:
+   - `uv run ./manage.py makemigrations`
+   - `uv run ./manage.py migrate`
+   - `uv run ./run_tests.py`
+4. Verify OpenRouter model list in `.env` and ensure models are multimodal.
+5. Optional: add image metadata extraction (width/height) if useful for future UX.
 
 Decision (USER-ANSWER): Use the two-stage approach.
 
