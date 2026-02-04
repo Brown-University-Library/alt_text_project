@@ -68,6 +68,70 @@ class StatusFragmentTest(TestCase):
         ## Should trigger verapdf fragment load
         self.assertContains(response, 'verapdf.fragment')
 
+    def test_status_fragment_completed_accessible(self):
+        """
+        Checks that status fragment renders accessible assessment when compliant is True.
+        """
+        self.document.processing_status = 'completed'
+        self.document.save()
+        VeraPDFResult.objects.create(
+            pdf_document=self.document,
+            raw_json={
+                'report': {
+                    'jobs': [
+                        {
+                            'validationResult': [
+                                {
+                                    'compliant': True,
+                                }
+                            ],
+                        }
+                    ]
+                }
+            },
+            is_accessible=True,
+            validation_profile='PDF/UA-1',
+            verapdf_version='1.0',
+        )
+        url = reverse('status_fragment_url', kwargs={'pk': self.test_uuid})
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, 'Assessment:')
+        self.assertContains(response, 'assessment-accessible')
+        self.assertContains(response, 'accessible')
+
+    def test_status_fragment_completed_not_accessible(self):
+        """
+        Checks that status fragment renders not-accessible assessment when compliant is False.
+        """
+        self.document.processing_status = 'completed'
+        self.document.save()
+        VeraPDFResult.objects.create(
+            pdf_document=self.document,
+            raw_json={
+                'report': {
+                    'jobs': [
+                        {
+                            'validationResult': [
+                                {
+                                    'compliant': False,
+                                }
+                            ],
+                        }
+                    ]
+                }
+            },
+            is_accessible=False,
+            validation_profile='PDF/UA-1',
+            verapdf_version='1.0',
+        )
+        url = reverse('status_fragment_url', kwargs={'pk': self.test_uuid})
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, 'Assessment:')
+        self.assertContains(response, 'assessment-not-accessible')
+        self.assertContains(response, 'not-accessible')
+
     def test_status_fragment_failed(self):
         """
         Checks that status fragment stops polling for failed status.
@@ -189,7 +253,35 @@ class SummaryFragmentTest(TestCase):
         url = reverse('summary_fragment_url', kwargs={'pk': self.test_uuid})
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)
-        self.assertContains(response, 'Summary coming soon')
+        self.assertContains(response, 'Suggestions coming soon')
+
+    def test_summary_fragment_accessible_hides_section(self):
+        """
+        Checks that accessible PDFs do not render the suggestions section.
+        """
+        VeraPDFResult.objects.create(
+            pdf_document=self.document,
+            raw_json={
+                'report': {
+                    'jobs': [
+                        {
+                            'validationResult': [
+                                {
+                                    'compliant': True,
+                                }
+                            ],
+                        }
+                    ]
+                }
+            },
+            is_accessible=True,
+            validation_profile='PDF/UA-1',
+            verapdf_version='1.0',
+        )
+        url = reverse('summary_fragment_url', kwargs={'pk': self.test_uuid})
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        self.assertNotContains(response, 'Accessibility Improvement Suggestions')
 
     def test_summary_fragment_pending(self):
         """
@@ -217,7 +309,7 @@ class SummaryFragmentTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)
         self.assertContains(response, 'hx-get')
-        self.assertContains(response, 'Generating summary')
+        self.assertContains(response, 'Generating suggestions')
 
     def test_summary_fragment_completed(self):
         """
@@ -249,7 +341,7 @@ class SummaryFragmentTest(TestCase):
         url = reverse('summary_fragment_url', kwargs={'pk': self.test_uuid})
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)
-        self.assertContains(response, 'Summary generation failed')
+        self.assertContains(response, 'Suggestion generation failed')
 
     def test_summary_fragment_cache_control(self):
         """

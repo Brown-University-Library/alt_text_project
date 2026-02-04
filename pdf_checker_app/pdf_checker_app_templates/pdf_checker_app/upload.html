@@ -1,6 +1,6 @@
 {% extends "pdf_checker_app/base.html" %}
 
-{% block title %}Upload PDF - PDF Accessibility Checker{% endblock %}
+{% block title %}Check PDF{% endblock %}
 
 {% block content %}
 <div class="card">
@@ -25,9 +25,13 @@
             <p>Or drag and drop your PDF here</p>
         </div>
         
-        <button type="submit" class="btn btn-primary">
+        <button type="submit" class="btn btn-primary" id="upload-submit">
             Check Accessibility
         </button>
+        <div class="processing-indicator" id="processing-indicator" aria-live="polite" role="status">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="processing-text">Processing PDF...</span>
+        </div>
     </form>
 </div>
 
@@ -35,6 +39,9 @@
     // Simple drag-and-drop enhancement
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('id_pdf_file');
+    const uploadForm = document.getElementById('upload-form');
+    const processingIndicator = document.getElementById('processing-indicator');
+    const submitButton = document.getElementById('upload-submit');
     
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -57,6 +64,12 @@
     
     dropZone.addEventListener('click', () => {
         fileInput.click();
+    });
+
+    uploadForm.addEventListener('submit', () => {
+        processingIndicator.classList.add('is-visible');
+        submitButton.setAttribute('disabled', 'disabled');
+        submitButton.classList.add('is-disabled');
     });
 </script>
 {% endblock %}
