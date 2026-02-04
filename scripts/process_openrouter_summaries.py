@@ -10,7 +10,7 @@ Usage:
 
 Requires:
     OPENROUTER_API_KEY environment variable to be set.
-    OPENROUTER_MODEL environment variable to be set.
+    OPENROUTER_MODEL_ORDER environment variable to be set.
 """
 
 import argparse
@@ -20,8 +20,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from dotenv import find_dotenv, load_dotenv
-
 ## Django setup - must happen before importing Django models
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
@@ -29,21 +27,18 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
-## Load environment variables
-dotenv_path = project_root.parent / '.env'
-load_dotenv(find_dotenv(str(dotenv_path), raise_error_if_not_found=True), override=True)
+log = logging.getLogger(__name__)
 
 import django  # noqa: E402
 
 django.setup()
 
 from django.conf import settings as project_settings  # noqa: E402
+from django.db.models import Q  # noqa: E402
 from django.utils import timezone as django_timezone  # noqa: E402
 
 from pdf_checker_app.lib import openrouter_helpers  # noqa: E402
 from pdf_checker_app.models import OpenRouterSummary, PDFDocument, VeraPDFResult  # noqa: E402
-
-log = logging.getLogger(__name__)
 
 
 def get_api_key() -> str:
@@ -66,13 +61,18 @@ def find_pending_summaries(batch_size: int) -> list[PDFDocument]:
         PDFDocument.objects.filter(processing_status='completed')
         .exclude(openrouter_summary__isnull=False)
         .filter(verapdf_result__isnull=False)
+        .exclude(verapdf_result__is_accessible=True)
         .order_by('uploaded_at')[:batch_size]
     )
 
-    ## Find docs with pending summary
+    ## Find docs with pending or failed summary
     docs_with_pending_summary = (
-        PDFDocument.objects.filter(processing_status='completed', openrouter_summary__status='pending')
+        PDFDocument.objects.filter(
+            processing_status='completed',
+        )
+        .filter(Q(openrouter_summary__status='pending') | Q(openrouter_summary__status='failed'))
         .filter(verapdf_result__isnull=False)
+        .exclude(verapdf_result__is_accessible=True)
         .order_by('uploaded_at')[:batch_size]
     )
 
@@ -87,14 +87,14 @@ def find_pending_summaries(batch_size: int) -> list[PDFDocument]:
     return result
 
 
-def get_model() -> str:
+def get_model_order() -> list[str]:
     """
-    Retrieves the OpenRouter model from environment.
+    Retrieves the OpenRouter model order from environment.
     """
-    return openrouter_helpers.get_model()
+    return openrouter_helpers.get_model_order()
 
 
-def process_single_summary(doc: PDFDocument, api_key: str, model: str) -> bool:
+def process_single_summary(doc: PDFDocument, api_key: str, model_order: list[str]) -> bool:
     """
     Generates and saves an OpenRouter summary for a single document.
     Returns True on success, False on failure.
@@ -139,7 +139,12 @@ def process_single_summary(doc: PDFDocument, api_key: str, model: str) -> bool:
 
         ## Call API with cron timeout
         timeout_seconds = project_settings.OPENROUTER_CRON_TIMEOUT_SECONDS
-        response_json = openrouter_helpers.call_openrouter(prompt, api_key, model, timeout_seconds)
+        response_json = openrouter_helpers.call_openrouter_with_model_order(
+            prompt,
+            api_key,
+            model_order,
+            timeout_seconds,
+        )
 
         ## Parse response
         parsed = openrouter_helpers.parse_openrouter_response(response_json)
@@ -169,9 +174,9 @@ def process_summaries(batch_size: int, dry_run: bool) -> tuple[int, int]:
         log.error('OPENROUTER_API_KEY environment variable not set')
         return (0, 0)
 
-    model = get_model()
-    if not model:
-        log.error('OPENROUTER_MODEL environment variable not set')
+    model_order = get_model_order()
+    if not model_order:
+        log.error('OPENROUTER_MODEL_ORDER environment variable not set')
         return (0, 0)
 
     docs = find_pending_summaries(batch_size)
@@ -186,7 +191,7 @@ def process_summaries(batch_size: int, dry_run: bool) -> tuple[int, int]:
     failure_count = 0
 
     for doc in docs:
-        if process_single_summary(doc, api_key, model):
+        if process_single_summary(doc, api_key, model_order):
             success_count += 1
         else:
             failure_count += 1

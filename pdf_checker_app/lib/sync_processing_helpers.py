@@ -39,6 +39,11 @@ def attempt_synchronous_processing(doc: PDFDocument, pdf_path: Path) -> None:
         return
 
     ## If veraPDF succeeded, attempt OpenRouter
+    verapdf_result = VeraPDFResult.objects.get(pdf_document=doc)
+    if verapdf_result.is_accessible:
+        log.info(f'Skipping OpenRouter for accessible document {doc.pk}')
+        return
+
     attempt_openrouter_sync(doc)
 
 
@@ -83,9 +88,9 @@ def attempt_openrouter_sync(doc: PDFDocument) -> bool:
     Returns True if successful, False if timeout or error.
     """
     api_key = openrouter_helpers.get_api_key()
-    model = openrouter_helpers.get_model()
+    model_order = openrouter_helpers.get_model_order()
 
-    if not api_key or not model:
+    if not api_key or not model_order:
         log.warning(f'OpenRouter credentials not available, skipping sync attempt for document {doc.pk}')
         return False
 
@@ -121,7 +126,12 @@ def attempt_openrouter_sync(doc: PDFDocument) -> bool:
         summary.save(update_fields=['prompt'])
 
         ## Call API with timeout
-        response_json = openrouter_helpers.call_openrouter(prompt, api_key, model, timeout_seconds)
+        response_json = openrouter_helpers.call_openrouter_with_model_order(
+            prompt,
+            api_key,
+            model_order,
+            timeout_seconds,
+        )
         parsed = openrouter_helpers.parse_openrouter_response(response_json)
 
         ## Persist

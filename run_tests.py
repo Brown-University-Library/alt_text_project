@@ -9,16 +9,9 @@ Usage examples:
     (method) uv run ./run_tests.py -v tests.test_environment_checks.TestEnvironmentChecks.test_check_branch_non_main_raises
 """
 
-import os
-
-## set settings as early as possible --------------------------------
-is_running_on_github: bool = os.environ.get('GITHUB_ACTIONS', '').lower() == 'true'
-if is_running_on_github:
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings_run_tests'
-else:
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings'
-
 import argparse
+import importlib
+import os
 import sys
 from pathlib import Path
 
@@ -34,6 +27,13 @@ def main() -> None:
     - Uses Django's test runner so app-based tests (e.g., `pdf_checker_app/tests/`) are discovered
     - Sets top-level directory to the webapp root so `lib/` is importable
     """
+    ## set settings as early as possible --------------------------------
+    is_running_on_github: bool = os.environ.get('GITHUB_ACTIONS', '').lower() == 'true'
+    if is_running_on_github:
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings_ci_tests'
+    else:
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings'
+
     ## set up argparser ---------------------------------------------
     parser = argparse.ArgumentParser(description='Run webapp tests')
     parser.add_argument(
@@ -59,8 +59,16 @@ def main() -> None:
     sys.path.insert(0, str(webapp_root))
     ## Change working directory to webapp root so relative discovery works
     os.chdir(webapp_root)
+    settings_module = os.environ.get('DJANGO_SETTINGS_MODULE', '')
+    print(
+        f'DJANGO_SETTINGS_MODULE={settings_module} (GITHUB_ACTIONS={os.environ.get("GITHUB_ACTIONS", "")})',
+        flush=True,
+    )
+    if settings_module:
+        settings_mod = importlib.import_module(settings_module)
+        print(f'Settings module file: {getattr(settings_mod, "__file__", None)}', flush=True)
     ## Initialize Django and use Django's test runner -----------------
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module or 'config.settings')
     django.setup()
     verbosity = 2 if args.verbose else 1
     test_labels: list[str] = list(args.targets) if args.targets else []
