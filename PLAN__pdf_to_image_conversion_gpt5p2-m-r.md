@@ -316,6 +316,7 @@ Reason: the shift from “PDF + veraPDF + OpenRouter” to “Image + OpenRouter
 - Update tests accordingly
 
 If you prefer, Stage 2 can be folded into Stage 1, but it will be a larger “big bang” change.
+USER-ANSWER: Use the two-stage approach.
 
 ---
 
