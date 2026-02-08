@@ -25,13 +25,19 @@ def attempt_synchronous_processing(doc: ImageDocument, image_path: Path) -> None
     Attempts to run OpenRouter synchronously with timeouts.
     Updates doc status in-place. Falls back to 'pending' on timeout.
     """
+    log.debug(f'starting attempt_synchronous_processing() for document ``{doc.pk}')
     ## Mark as processing and set timestamp
     doc.processing_status = 'processing'
     doc.processing_error = None
     doc.processing_started_at = datetime.datetime.now()
     doc.save(update_fields=['processing_status', 'processing_error', 'processing_started_at'])
-
-    attempt_openrouter_sync(doc, image_path)
+    try:
+        attempt_openrouter_sync(doc, image_path)
+    except Exception as exc:
+        log.exception('OpenRouter failed for document %s', doc.pk)
+        doc.processing_status = 'failed'
+        doc.processing_error = str(exc)
+        doc.save(update_fields=['processing_status', 'processing_error'])
 
 
 def attempt_openrouter_sync(doc: ImageDocument, image_path: Path) -> bool:
@@ -39,6 +45,7 @@ def attempt_openrouter_sync(doc: ImageDocument, image_path: Path) -> bool:
     Attempts synchronous OpenRouter alt-text generation with timeout.
     Returns True if successful, False if timeout or error.
     """
+    log.debug(f'starting attempt_openrouter_sync() for document ``{doc.pk}')
     api_key = openrouter_helpers.get_api_key()
     model_order = openrouter_helpers.get_model_order()
 

@@ -35,7 +35,10 @@ def get_api_key() -> str:
     """
     Retrieves the OpenRouter API key from environment.
     """
-    return project_settings.OPENROUTER_API_KEY
+    log.debug('starting get_api_key()')
+    key = project_settings.OPENROUTER_API_KEY
+    log.debug(f'key, ``{key}``')
+    return key
 
 
 def get_model_order() -> list[str]:
