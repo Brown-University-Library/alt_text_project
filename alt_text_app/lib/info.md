@@ -58,7 +58,7 @@ Alt text is a concise written description of an image for people who use screen 
 
 ## this webapp's output
 
-This webapp sends the uploaded image to a multimodal OpenRouter model with a prompt that asks for concise, accessibility-focused alt text.
+zThis webapp sends the uploaded image to a multimodal OpenRouter model with a prompt that asks for concise, accessibility-focused alt text.
 
 Here's the [current prompt][prompt]. It will likely change over time as we experiment.
 
@@ -71,7 +71,7 @@ Typically, you'll select and submit your image file. Usually within 20-seconds, 
 
 Copy the url if you want to review or share the report.
 
-If something goes wrong, you'll still be directed to the report page, but it will show a problem with the LLM suggestions. Still, save that url and try to access it again later. We plan to implement a script to check for temporarily failed jobs and retry them.
+If something goes wrong, you'll still be directed to the report page, but it will show a problem with the alt-text suggestion. Still, save that url and try to access it again later. We plan to implement a script to check for temporarily failed jobs and retry them.
 
 Let us know via the feedback link on each page if you have any problems or questions.
 
@@ -80,4 +80,4 @@ Let us know via the feedback link on each page if you have any problems or quest
 [ccv]: <https://ccv.brown.edu/>
 [oit]: <https://it.brown.edu/>
 [or]: <https://openrouter.ai/>
-[prompt]: ./prompt.md
+[prompt]: <https://github.com/Brown-University-Library/alt_text_project/blob/main/alt_text_app/lib/prompt.md>
