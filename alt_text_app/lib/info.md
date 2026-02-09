@@ -34,13 +34,11 @@ Official Brown models offer privacy guarantees that this webapp doesn't.
 
 ### Capability
 
-Currently, we're using a free [OpenRouter][or] account, using one of a few free models, which are less capable than models we hope to use in the future.
+Currently, we're using one of the developer's personal [OpenRouter][or] account, in order to use a multi-modal model. We're using one of the least expensive for this experiment, so the output quality may be limited.
 
 ### Scalability
 
-Our free account is limited to 50 requests per day. 
-
-Due to this, we're initially only opening this up to library-staff. 
+Due to this personal account, where each request costs a bit of money, we're initially only opening this up to some library-staff, to demo functionality. 
 
 If this proves useful, and we're able to access a Brown model, we'll open this up to the Brown community, and eventually may implement API features on the drawing-board.
 
@@ -58,7 +56,7 @@ Alt text is a concise written description of an image for people who use screen 
 
 ## this webapp's output
 
-zThis webapp sends the uploaded image to a multimodal OpenRouter model with a prompt that asks for concise, accessibility-focused alt text.
+This webapp sends the uploaded image to a multimodal OpenRouter model with a prompt that asks for concise, accessibility-focused alt text.
 
 Here's the [current prompt][prompt]. It will likely change over time as we experiment.
 
