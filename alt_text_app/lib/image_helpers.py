@@ -60,23 +60,6 @@ def save_image_file(file: UploadedFile, checksum: str, extension: str) -> Path:
     return upload_image_path
 
 
-# def save_temp_file(file: UploadedFile, checksum: str) -> Path:
-#     """
-#     Saves uploaded file to temporary storage.
-#     """
-#     temp_dir = Path(project_settings.PDF_UPLOAD_PATH).expanduser()
-#     if not temp_dir.is_absolute():
-#         temp_dir = Path(project_settings.BASE_DIR) / temp_dir
-#     temp_dir.mkdir(parents=True, exist_ok=True)
-#     temp_path = temp_dir / f'{checksum}.pdf'
-
-#     with open(temp_path, 'wb') as dest:
-#         for chunk in file.chunks():
-#             dest.write(chunk)
-
-#     return temp_path
-
-
 def get_image_path(checksum: str, extension: str) -> Path:
     """
     Builds the path to a stored image from its checksum and extension.
