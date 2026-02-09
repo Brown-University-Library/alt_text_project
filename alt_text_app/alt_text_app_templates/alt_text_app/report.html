@@ -1,0 +1,46 @@
+{% extends "alt_text_app/base.html" %}
+
+{% block title %}Report - {{ document.original_filename }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Image Alt-Text Report</h1>
+    
+    <div class="document-info">
+        <h2>Image Information</h2>
+        <dl>
+            <dt>File:</dt>
+            <dd>{{ document.original_filename }}</dd>
+            
+            <dt>Uploaded by:</dt>
+            <dd>{{ document.user_first_name }} {{ document.user_last_name }} {% if document.user_email %}({{ document.user_email }}){% endif %}</dd>
+            
+            <dt>Uploaded:</dt>
+            <dd>{{ document.uploaded_at|date:"Y-m-d H:i" }}</dd>
+            
+            <dt>Size:</dt>
+            <dd>{{ document.file_size|filesizeformat }}</dd>
+            
+            <dt>Status:</dt>
+            <dd>{{ document.get_processing_status_display }}</dd>
+        </dl>
+    </div>
+    
+    <div class="image-preview">
+        <h2>Image Preview</h2>
+        <img src="{% url 'image_preview_url' pk=document.pk %}" alt="Uploaded image preview" />
+    </div>
+
+    <!-- Status section with htmx polling -->
+    {% include "alt_text_app/fragments/status_fragment.html" %}
+
+    <!-- Alt-text section (populated when OpenRouter alt text is ready) -->
+    {% include "alt_text_app/fragments/alt_text_fragment.html" %}
+    
+    <div class="actions">
+        <a href="{% url 'image_upload_url' %}" class="btn btn-secondary">
+            Upload Another Image
+        </a>
+    </div>
+</div>
+{% endblock %}

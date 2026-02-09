@@ -41,7 +41,7 @@ INSTALLED_APPS: list[str] = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'pdf_checker_app',
+    'alt_text_app',
 ]
 
 MIDDLEWARE: list[str] = [
@@ -59,7 +59,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES: list[dict[str, object]] = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [f'{BASE_DIR}/pdf_checker_app/pdf_checker_app_templates'],
+        'DIRS': [f'{BASE_DIR}/alt_text_app/alt_text_app_templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -180,7 +180,7 @@ LOGGING: dict[str, object] = {
             'level': 'DEBUG',
             'propagate': False,
         },
-        'pdf_checker_app': {
+        'alt_text_app': {
             'handlers': ['console'],  # for ci, just output to console
             'level': 'DEBUG',  # messages above this will get sent to the `logfile` handler
             'propagate': False,
@@ -211,13 +211,6 @@ TEST_RUNNER: str = 'django.test.runner.DiscoverRunner'
 ## Pattern header configuration
 PATTERN_HEADER_URL: str = ''
 
-## veraPDF Configuration
-# VERAPDF_PATH = os.environ['VERAPDF_PATH']
-# VERAPDF_PROFILE = os.environ['VERAPDF_PROFILE']  # for now using `PDFUA_1_MACHINE`
-
-VERAPDF_PATH: str = '/foo'
-VERAPDF_PROFILE: str = 'bar'
-
 ## OpenRouter configuration
 OPENROUTER_API_KEY: str = ''
 OPENROUTER_MODEL_ORDER_RAW: str = ''
@@ -229,15 +222,12 @@ FILE_UPLOAD_MAX_MEMORY_SIZE: int = 52428800  # 50MB
 DATA_UPLOAD_MAX_MEMORY_SIZE: int = 52428800  # 50MB
 
 ## Temp file storage
-# PDF_UPLOAD_PATH = os.environ['PDF_UPLOAD_PATH']
-PDF_UPLOAD_PATH: str = '/baz'
+IMAGE_UPLOAD_PATH: str = '/baz'
 
 ## Synchronous processing timeouts (web requests)
-VERAPDF_SYNC_TIMEOUT_SECONDS: float = 30.0
 OPENROUTER_SYNC_TIMEOUT_SECONDS: float = 30.0
 
 ## Cron job timeouts (background processing - more patient)
-VERAPDF_CRON_TIMEOUT_SECONDS: float = 60.0
 OPENROUTER_CRON_TIMEOUT_SECONDS: float = 60.0
 
 ## Stuck processing recovery threshold (10 minutes)

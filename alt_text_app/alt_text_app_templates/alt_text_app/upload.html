@@ -1,0 +1,75 @@
+{% extends "alt_text_app/base.html" %}
+
+{% block title %}Generate Alt Text{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Image Alt-Text Maker</h1>
+    <p>Upload an image to generate accessibility-focused alt text.</p>
+    
+    <form method="post" enctype="multipart/form-data" id="upload-form">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            {{ form.image_file.label_tag }}
+            {{ form.image_file }}
+            {% if form.image_file.help_text %}
+                <small class="help-text">{{ form.image_file.help_text }}</small>
+            {% endif %}
+            {% if form.image_file.errors %}
+                <div class="error">{{ form.image_file.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div id="drop-zone" class="drop-zone">
+            <p>Or drag and drop your image here</p>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" id="upload-submit">
+            Generate Alt Text
+        </button>
+        <div class="processing-indicator" id="processing-indicator" aria-live="polite" role="status">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="processing-text">Processing image...</span>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Simple drag-and-drop enhancement
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('id_image_file');
+    const uploadForm = document.getElementById('upload-form');
+    const processingIndicator = document.getElementById('processing-indicator');
+    const submitButton = document.getElementById('upload-submit');
+    
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+        }
+    });
+    
+    dropZone.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    uploadForm.addEventListener('submit', () => {
+        processingIndicator.classList.add('is-visible');
+        submitButton.setAttribute('disabled', 'disabled');
+        submitButton.classList.add('is-disabled');
+    });
+</script>
+{% endblock %}

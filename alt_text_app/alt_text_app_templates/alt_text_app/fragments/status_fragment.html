@@ -1,0 +1,36 @@
+{% comment %}
+Status fragment for htmx polling.
+Stops polling when is_terminal is True (completed or failed).
+{% endcomment %}
+
+{% if document.processing_status == 'pending' %}
+<div id="status-container" 
+     class="status-pending"
+     hx-get="{% url 'status_fragment_url' pk=document.pk %}"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML">
+    <p>This image is queued for processing. Please wait...</p>
+</div>
+
+{% elif document.processing_status == 'processing' %}
+<div id="status-container" 
+     class="status-processing"
+     hx-get="{% url 'status_fragment_url' pk=document.pk %}"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML">
+    <p>This image is currently being processed. Please wait...</p>
+</div>
+
+{% elif document.processing_status == 'failed' %}
+<div id="status-container" class="status-failed">
+    <p><strong>Processing failed:</strong> Try again; if this continues, use the feedback link above.</p>
+</div>
+
+{% elif document.processing_status == 'completed' %}
+<div id="status-container" class="status-completed">
+    <p>
+        Processing complete.
+    </p>
+</div>
+
+{% endif %}
