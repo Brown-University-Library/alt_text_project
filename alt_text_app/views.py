@@ -7,12 +7,12 @@ from pathlib import Path
 import trio
 from django.conf import settings as project_settings
 from django.contrib import messages
-from django.http import FileResponse, HttpRequest, HttpResponse, HttpResponseNotFound, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponse, HttpResponseNotFound, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
 from alt_text_app.forms import ImageUploadForm
-from alt_text_app.lib import image_helpers, markdown_helpers, sync_processing_helpers, version_helper
+from alt_text_app.lib import image_helpers, markdown_helpers, sync_processing_helpers, thumbnail_helpers, version_helper
 from alt_text_app.lib.version_helper import GatherCommitAndBranchData
 from alt_text_app.models import ImageDocument, OpenRouterAltText
 
@@ -113,12 +113,28 @@ def upload_image(request: HttpRequest) -> HttpResponse:
                     doc.file_extension,
                 )
                 log.debug(f'saved image file to {image_path}')
+                thumbnail_bytes, thumb_width, thumb_height = thumbnail_helpers.generate_thumbnail_webp(image_path)
+                doc.thumbnail_webp = thumbnail_bytes
+                doc.thumbnail_created_at = datetime.datetime.now()
+                doc.thumbnail_error = None
+                doc.thumbnail_width_px = thumb_width
+                doc.thumbnail_height_px = thumb_height
+                doc.save(
+                    update_fields=[
+                        'thumbnail_webp',
+                        'thumbnail_created_at',
+                        'thumbnail_error',
+                        'thumbnail_width_px',
+                        'thumbnail_height_px',
+                    ]
+                )
             except Exception as exc:
                 log.exception('Failed to save image file')
                 doc.processing_status = 'failed'
                 doc.processing_error = f'Failed to save file: {exc}'
-                doc.save(update_fields=['processing_status', 'processing_error'])
-                messages.error(request, 'Failed to save image file. Please try again.')
+                doc.thumbnail_error = str(exc)
+                doc.save(update_fields=['processing_status', 'processing_error', 'thumbnail_error'])
+                messages.error(request, 'Failed to save image thumbnail. Please try again.')
                 return HttpResponseRedirect(reverse('image_report_url', kwargs={'pk': doc.pk}))
 
             ## Attempt synchronous processing
@@ -229,12 +245,9 @@ def image_preview(request, pk: uuid.UUID) -> HttpResponse:
     """
     log.debug(f'starting image_preview() for pk={pk}')
     doc = get_object_or_404(ImageDocument, pk=pk)
-    if not doc.file_extension:
+    if not doc.thumbnail_webp:
         return HttpResponseNotFound('<div>404 / Not Found</div>')
-    image_path = image_helpers.get_image_path(doc.file_checksum, doc.file_extension)
-    if not image_path.exists():
-        return HttpResponseNotFound('<div>404 / Not Found</div>')
-    return FileResponse(open(image_path, 'rb'), content_type=doc.mime_type or 'image/*')
+    return HttpResponse(doc.thumbnail_webp, content_type='image/webp')
 
 
 # -------------------------------------------------------------------

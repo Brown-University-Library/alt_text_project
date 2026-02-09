@@ -18,6 +18,13 @@ class ImageDocument(models.Model):
     mime_type = models.CharField(max_length=100)
     file_extension = models.CharField(max_length=10)
 
+    ## Thumbnail storage
+    thumbnail_webp = models.BinaryField(blank=True, null=True)
+    thumbnail_created_at = models.DateTimeField(blank=True, null=True)
+    thumbnail_error = models.TextField(blank=True, null=True)
+    thumbnail_width_px = models.IntegerField(blank=True, null=True)
+    thumbnail_height_px = models.IntegerField(blank=True, null=True)
+
     ## Shibboleth user information
     user_first_name = models.CharField(max_length=100, blank=True)
     user_last_name = models.CharField(max_length=100, blank=True)

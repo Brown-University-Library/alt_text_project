@@ -1,10 +1,9 @@
+import io
 import logging
-import tempfile
 import uuid
-from pathlib import Path
 
+from PIL import Image
 from django.test import TestCase
-from django.test.utils import override_settings
 from django.urls import reverse
 
 from alt_text_app.models import ImageDocument
@@ -67,24 +66,22 @@ class ImageReportTest(TestCase):
 
     def test_image_preview_url_with_existing_file(self) -> None:
         """
-        Checks that image preview URL streams the stored file.
+        Checks that image preview URL streams the stored thumbnail.
         """
-        content = b'\x89PNG\r\n\x1a\npreview'
-        with tempfile.TemporaryDirectory() as temp_dir:
-            with override_settings(IMAGE_UPLOAD_PATH=temp_dir):
-                image_path = Path(temp_dir) / f'{self.document.file_checksum}.png'
-                image_path.write_bytes(content)
-                url = reverse('image_preview_url', kwargs={'pk': self.test_uuid})
-                response = self.client.get(url)
-                self.assertEqual(200, response.status_code)
-                self.assertEqual('image/png', response['Content-Type'])
+        thumbnail_stream = io.BytesIO()
+        with Image.new('RGB', (10, 10), color='blue') as image:
+            image.save(thumbnail_stream, format='WEBP')
+        self.document.thumbnail_webp = thumbnail_stream.getvalue()
+        self.document.save(update_fields=['thumbnail_webp'])
+        url = reverse('image_preview_url', kwargs={'pk': self.test_uuid})
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('image/webp', response['Content-Type'])
 
     def test_image_preview_url_missing_file(self) -> None:
         """
-        Checks that image preview URL returns 404 when file is missing.
+        Checks that image preview URL returns 404 when thumbnail is missing.
         """
-        with tempfile.TemporaryDirectory() as temp_dir:
-            with override_settings(IMAGE_UPLOAD_PATH=temp_dir):
-                url = reverse('image_preview_url', kwargs={'pk': self.test_uuid})
-                response = self.client.get(url)
-                self.assertEqual(404, response.status_code)
+        url = reverse('image_preview_url', kwargs={'pk': self.test_uuid})
+        response = self.client.get(url)
+        self.assertEqual(404, response.status_code)

@@ -4,10 +4,12 @@ Tests for the image upload view.
 
 import base64
 import hashlib
+import io
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
+from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.test.utils import override_settings
@@ -46,6 +48,12 @@ class ImageUploadViewTest(TestCase):
                 self.assertEqual('valid_image.png', document.original_filename)
                 self.assertEqual(expected_checksum, document.file_checksum)
                 self.assertEqual('pending', document.processing_status)
+                self.assertIsNotNone(document.thumbnail_webp)
+                self.assertIsNotNone(document.thumbnail_created_at)
+                self.assertIsNone(document.thumbnail_error)
+
+                with Image.open(io.BytesIO(document.thumbnail_webp)) as thumbnail:
+                    self.assertEqual('WEBP', thumbnail.format)
 
                 expected_path = Path(temp_dir) / f'{expected_checksum}.png'
                 self.assertTrue(expected_path.exists())
