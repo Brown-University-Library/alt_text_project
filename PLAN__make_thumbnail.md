@@ -7,6 +7,10 @@ The thumbnail generation must follow `alt_text_project/image_thumbnail_specifica
 
 ---
 
+(Review `alt_text_project/AGENTS.md` for coding-directives to follow.)
+
+---
+
 ## Current Behavior (as of Feb 9, 2026)
 - **Template**: `alt_text_app/alt_text_app_templates/alt_text_app/report.html` uses:
   - `<img src="{% url 'image_preview_url' pk=document.pk %}" ... />`
