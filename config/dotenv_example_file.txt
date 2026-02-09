@@ -24,7 +24,7 @@ DATABASES_JSON='
       "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "HOST": "",
-        "NAME": "../DBs/pdf_checker_project.sqlite",
+        "NAME": "../DBs/project.sqlite",
         "PASSWORD": "",
         "PORT": "",
         "USER": ""
@@ -39,7 +39,7 @@ SERVER_EMAIL="donotreply_foo-project@domain.edu"
 EMAIL_HOST="localhost"
 EMAIL_PORT="1026"  # will be converted to int in settings.py
 
-LOG_PATH="../logs/pdf_checker_project.log"
+LOG_PATH="../logs/project.log"
 LOG_LEVEL="DEBUG"
 
 ## OpenRouter (comma-delimited model order)
@@ -79,8 +79,5 @@ TEST_META_DCT_JSON='{
   "shib-firstname-key": "First",
   "shib-groups-key": "aa:bb:cc;dd:ee:ff;the:group;gg:hh"
 }'
-
-LOGIN_PROBLEM_EMAIL="pdf_checker_project_problems@domain.edu"
-
 
 ## end --------------------------------------------------------------
