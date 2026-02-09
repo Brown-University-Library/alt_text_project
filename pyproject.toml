@@ -1,12 +1,12 @@
 [project]
-name = "pdf_checker_project"
+name = "alt-text-maker"
 version = "0.0.0"
-description = "Webapp to validate PDF accessibility."
+description = "Webapp to create alt-text for images."
 readme = "coming"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "Django~=5.2.0",
-    "httpx~=0.28.0",  # no current http requests; but here cuz we're switching to this from `requests`
+    "httpx~=0.28.0",  
     "beautifulsoup4~=4.12.0",
     "markdown~=3.6.0",
     "python-dotenv~=1.1.0",

@@ -3,7 +3,7 @@ Runs tests for this webap.
 
 Usage examples:
     (all) uv run ./run_tests.py -v
-    (app) uv run ./run_tests.py -v pdf_checker_app
+    (app) uv run ./run_tests.py -v alt_text_app
     (file) uv run ./run_tests.py -v tests.test_environment_checks
     (class) uv run ./run_tests.py -v tests.test_environment_checks.TestEnvironmentChecks
     (method) uv run ./run_tests.py -v tests.test_environment_checks.TestEnvironmentChecks.test_check_branch_non_main_raises
@@ -24,7 +24,7 @@ def main() -> None:
     """
     Discover and run tests for this webapp.
     - Uses standard library unittest (per AGENTS.md)
-    - Uses Django's test runner so app-based tests (e.g., `pdf_checker_app/tests/`) are discovered
+    - Uses Django's test runner so app-based tests (e.g., `alt_text_app/tests/`) are discovered
     - Sets top-level directory to the webapp root so `lib/` is importable
     """
     ## set settings as early as possible --------------------------------
@@ -47,8 +47,8 @@ def main() -> None:
         nargs='*',
         help=(
             'Optional dotted test targets to run, e.g. '
-            '(app) `pdf_checker_app` or '
-            '(module) `pdf_checker_app.tests.test_error_check` or '
+            '(app) `alt_text_app` or '
+            '(module) `alt_text_app.tests.test_error_check` or '
             '(class/method) dotted paths under app tests'
         ),
     )
